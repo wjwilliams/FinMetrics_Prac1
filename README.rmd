@@ -6,11 +6,7 @@ output:
 
 # Purpose
 
-Purpose of this work folder.
-
-Ideally store a minimum working example data set in data folder.
-
-Add binary files in bin, and closed R functions in code. Human Readable settings files (e.g. csv) should be placed in settings/
+This is the first practical for the module Financial Econometrics 871.
 
 
 ```{r}
@@ -18,7 +14,1426 @@ Add binary files in bin, and closed R functions in code. Human Readable settings
 rm(list = ls()) # Clean your environment:
 gc() # garbage collection - It can be useful to call gc after a large object has been removed, as this may prompt R to return memory to the operating system.
 library(tidyverse)
+library(fmxdat)
+
+pacman::p_load("xts", "tidyverse", "tbl2xts", "PerformanceAnalytics", 
+    "lubridate", "glue")
+
 list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
+
+pacman::p_load("xts", "tidyverse", "tbl2xts", "PerformanceAnalytics", 
+    "lubridate", "glue")
+```
+
+#Date converter
+This function allows you to fill in dates between a starting and end date. Again, this will save you pain in R:
+
+```{r}
+
+library(rmsfuns)
+dates1 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "alldays")
+dates2 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "weekdays")
+dates3 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "calendarEOM")  # Calendar end of month
+dates4 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "weekdayEOW")  # weekday end of week
+dates5 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "weekdayEOM")  # weekday end of month
+dates6 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "weekdayEOQ")  # weekday end of quarter
+dates7 <- dateconverter(as.Date("2000-01-01"), as.Date("2017-01-01"), 
+    "weekdayEOY")  # weekday end of year
+#This essentially creates an object of all the dates that you could want and then when you want to get returns for those particular dates it is easy to filter %in% the dates object you have created
+```
+
+#Build path (need to brush up on this)
+It can be challenging building path structures in R, but build_path makes this easy. This could e.g. be used in a function that creates folders and populates it with figures / data points. E.g., suppose you want to create a folder structure as follows:
+
+/Results/Figures/Financials/Figures/Return_plot.png
+
+/Results/Figures/Industrials/Figures/Return_plot.png
+
+/Results/Figures/HealthCare/Figures/Return_plot.png
+
+To create the folders to house the plots (and save their locations in a vector to use it later), run:
+```{r}
+# Specify a root on your computer, e.g.:
+Root <- "/Users/wesleywilliams/Desktop/School/Masters/Second Semester/Fin Metrics/Practical 1"
+
+# Specify the sectors:
+Sectors <- c("Financials", "Industrials", "HealthCare")
+
+# Construct the structure and bind them together:
+
+# base R's paste0:
+Locs <- build_path(paste0(Root, "/", Sectors, "/Figures/"))
+
+# glue's glue... (preferred)
+Locs <- build_path(glue::glue("{Root}/{Sectors}/Figures/"))
+
+# I prefer the glue function as it makes nore intuitive sense to me glue requires {} and can place opjects inside the brackets
+```
+
+#tbl2xts package NB!!!
+```{r}
+pacman::p_load("tbl2xts")
+
+```
+
+# ggplot Auxilliary functions
+mxdat now also comes with a suite of updated ggplot aux functions.
+
+This should make coding easier and stop you from needing to google the same commands frequently.
+
+Let me illustrate a few additions:
+```{r}
+library(tidyverse);library(fmxdat)
+
+p <- 
+  
+  fmxdat::Jalshtr %>% mutate(Index = "ALSI") %>% 
+  
+  ggplot() + 
+  
+  geom_line(aes(date, TRI, color = Index), size = 2, alpha = 0.7) + 
+  
+  # Nice clean theme, with many additions that are now simplified (explore this yourself):
+  # E.g. using fmxdat::ggpts, we can change the sizes more easily in millimeters. 
+  # theme_fmx also offers simplified size settings, as e.g. below:
+  
+  fmxdat::theme_fmx(title.size = ggpts(30), 
+                    subtitle.size = ggpts(28),
+                    caption.size = ggpts(25),
+                    # Makes nicer caption. If no caption given, this will break function, so careful:
+                    CustomCaption = T) + 
+  
+  # crisp colours:
+  fmxdat::fmx_cols() + 
+  
+  labs(x = "", y = "Cumulative Returns", caption = "Note:\nCalculation own",
+       title = "Illustrating fmxdat Auxilliary functions for ggplot",
+       subtitle = "If not subtitle, make blank and Subtitle size small to make a gap\nbetween plot and Title. Test this yourself") + 
+  
+  guides(color = F)
+  
+# Finplot now adds finishing touches easily:
+
+  fmxdat::finplot(p, x.vert = T, x.date.type = "%Y", x.date.dist = "2 years")
+  
+  #These are all of the different ways to use finplot. Look at the help package to see what is required for each argument 
+# #x.comma.sep	
+# Make x axis not show scientific values (e.g. shows 25,000,000 as opposed to 2.5e+6)
+# 
+# y.comma.sep	
+# Make y axis not show scientific values (e.g. shows 25,000,000 as opposed to 2.5e+6)
+# 
+# x.pct	
+# Make x axis percentages
+# 
+# x.pct_acc	
+# Rounding of pct value.
+# 
+# y.pct	
+# Make y axis percentages
+# 
+# y.pct_acc	
+# Rounding of pct value.
+# 
+# x.vert	
+# flip x axis
+# 
+# y.vert	
+# flip y axis
+# 
+# x.ticks.rm	
+# Remove x ticks altogether
+# 
+# y.ticks.rm	
+# Remove x ticks altogether
+# 
+# legend_pos	
+# where to position legend. Defaults to bottom.
+# 
+# col.hue	
+# set color hues. E.g., set hue = 40 to see what happens
+# 
+# fill.hue	
+# set fill hues. E.g., set hue = 40 to see what happens
+# 
+# darkcol	
+# Use dark colors
+# 
+# x.date.type	
+# Of e.g. form '%Y', '%y_%b'
+# 
+# x.date.dist	
+# Space between date points on x axis. E.g., "2 years", "10 week"
+# 
+# x.date.vector.sel	
+# Provide a vector of possible dates - this way weekends and holidays are e.g. removed... use bdscale here. E.g. use: x.date.vector.sel = unique(df$date)
+# 
+# legend.line.size	
+# Make legend lines larger
+# 
+# legend.text.size	
+# Adj legend text
+# 
+# legend.line.alpha	
+# Make legend lines lighter
+# 
+# log.y	
+# Apply a log transformation on the y-axis. This is a log base 10 transformation
+# 
+# title.center	
+# Put title in center of figure. Used with grids or facet wraps e.g.
+```
+
+# Return Series
+The above loaded data currently is in Total Return Index (TRI) format. This is a price adjusted for dividends, stock splits and other corporate actions that will create pricing distortions.
+
+When analyzing returns, always use TRI.
+
+We would now like to transform it into a usable returns series for further data analysis. This could be done using several techniques.
+
+Let’s first discuss a primer on returns:
+From the class notes remember we discussed:
+
+Go and learn the different returns
+
+Simple
+$$
+R_t = \frac{P_t}{P_{t-1}}-1
+$$
+Simple Returns with dividends Dt
+$$R_t = \frac{P_t+D_t-P_{t-1}}{P_{t-1}}=\frac{P_t}{P_{t-1}}-1+\frac{D_t}{P_{t-1}}$$
+Simple real returns
+$$ 1+ R_t^{Real} = \frac{p_t}{P_{t-1}} \times \frac{CPI_{t-1}}{CPI_t}
+$$
+Excess
+$$R_t^{excess} = R_t - R_{RF}
+$$
+Continuously compounded (log) returns
+$$  r_t = \frac{ln(P_t)}{ln(P_{t-1})} = ln(P_t) - ln(P_{t-1})$$
+  $$=ln(1+R_t)$$
+  Log returns dividends adjusted
+  $$r_t = ln(1+R_t) = ln(\frac{P_t+D_t}{P_{t-1}}) $$
+  
+$$= ln(P_t+D_t) - ln(P_{t-1})$$
+
+#Tale of two returns
+Aggregation over time is easiest to do using log returns (can sum across time dimensions), while aggregation over assets is more easily done with simple returns (can sum across assets within time t).
+
+Let’s explore this a bit.
+
+Calculating the weekly index simple returns (or cumulative returns):
+$$
+1+R_t[k] = \frac{P_t}{P_{t-k}} = \frac{P_t}{P_{t-1}} \times...\times \frac{P_{t-k+1}}{P_{t-k}}
+$$
+$$
+= \prod_{Pj=0}^{k-1}(1+R_{t-j})
+$$
+Thus the k-period simple gross return is just the product of k one-period simple returns. This is the compound return. NOTE: This is different from the k-period simple net return $$\frac{P_{t-k+1}}{P_{t-k}}$$
+:
+
+For Continuously compounded series its even easier. Here we just sum the weekly returns to monthly (check the math and class notes!):
+
+$$
+r_t[k]= r_t + ... + t_{t-k+1}
+$$
+
+
+Which should we use?
+Bacon (2011) goes into great detail on the various types of returns that can be calculated over and above the simple and continuously compounded returns we mentioned here. Such returns could be money-based or time-based, e.g., and depends on the needs and wants of the investor. I omit a deeper discussion into this, but quote Bacon (2011) in the following:
+
+Continuously compounded returns should be used in statistical analysis because, unlike simple returns, they are not positively biased… Bacon (2011)(p.29).
+
+
+Calculating simple returns of our five TRIs can then simply be done as follows:
+```{r}
+# although the columns are arranged by date, make sure of it
+# first:
+data <- fmxdat::BRICSTRI
+
+d1 <- 
+data %>% 
+arrange(Date) %>% 
+mutate_at(.vars = vars(-Date), ~./lag(.) - 1) %>% # Need to understand the period here through mutate_at (.vars	
+#A list of columns generated by vars(), a character vector of column names, a numeric vector of column positions, or NULL.)
+    slice(-1) # this is to remove the nas from the return calculation
+
+# Important to arrange by date, else the calculation will
+# clearly be wrong
+
+# Also note, the above is equivalent to using:
+# mutate_at(.vars = vars(brz:zar), .funs = funs(./lag(.) -
+# 1)) But this is terrible coding, as it requires constancy
+# in order (imagine you added another series or changed the
+# names to capital letters.)
+```
+
+Gathering
+Gathering and placing data into tidy format makes calculations much easier and unleashes the real power of dplyr…
+
+We will get to this later, but consider how the above can be done simply as follows:
+```{r}
+data %>% gather(Country, TRI, -Date)
+#Gather (from wide to long and spread is the inverse)
+# Notice that it is gathering data in a long format. Now we
+# can compute returns as:
+data %>% 
+gather(Country, TRI, -Date) %>% 
+group_by(Country) %>% 
+mutate(Return = TRI/lag(TRI) - 1) %>% 
+ungroup()
+
+# The log returna cab easily becalculated useing dplyer
+# Check that there are no missing values:
+colSums(is.na(data))
+
+# Calculate the log difference of each column:
+d1 <- data %>% 
+arrange(Date) %>% 
+mutate_at(.vars = vars(brz:zar), ~log(.) - log(lag(.))) %>% #Remember log rules (ln(x/y)= lnx - lny)
+    slice(-1)
+
+colSums(is.na(d1))
+
+
+# Again look at the function mutate at as it mutates multiplw columns at the same time (this is creating returns for all brics rather that doing it indiidually, could probably do it using group by but this function removes the "arbitraryness" of having to group by )
+```
+
+across
+across has now been introduced as a new verb to be used instead of mutate_at.
+
+I’m still warming to this, but I can see the merits. The above can be rewritten now as:
+
+```{r}
+d1 <- data %>% arrange(Date) %>% mutate(across(.cols = -Date, 
+    .fns = ~log(.) - lag(log(.))))
+
+# It think I prefer across as the .fns means functions to apply makes it easy to remember and .cols is the colloumns you want to apply it to
+```
+
+If you want to apply multiple functions inside across, as well as name it, note the following notation:
+
+```{r}
+data %>% 
+arrange(Date) %>% 
+gather(Tickers, Returns, -Date) %>% 
+# Remember - before a function, just add ~
+mutate(across(.cols = Returns, .fns = ~./lag(.) - 1, .names = "Simple_{col}")) %>% 
+    
+mutate(across(.cols = Returns, .fns = ~log(.) - lag(log(.)), 
+    .names = "Dlog_{col}")) %>% 
+filter(Date > first(Date)) %>%  #This is the same as slicing but cant use slice as the data is in tidy format
+group_by(Tickers) %>% 
+mutate(across(.cols = c(starts_with("Simple"), starts_with("Dlog")), 
+    .fns = list(Max = ~max(.), Min = ~min(.), Med = ~median(.)), 
+    .names = "{fn}_{col}")) %>% 
+ungroup()
+
+
+# Need to brush up on this as i don't fully understand the seconnd last line where does the fn come from as it was never explicitly named
+```
+
+#Performance analytics package
+But if you’re a bit insecure about your calcs, you could always use the PerformanceAnalytics package. This is a very powerful package that can be used to do all kinds of risk, return and portfolio calculations with.
+
+The problem previously was the effort to move from dplyr to xts - so use the tbl2xts package to facilitate this transition: (using tbl_xts and xts_tbl) - we will cover it a bit further down…
+```{r}
+library(PerformanceAnalytics)
+library(tbl2xts)
+
+d2 <- data %>% arrange(Date) %>% gather(Tickers, Returns, -Date) %>% 
+    # You can skip gather and spread here - more for
+# illustration:
+tbl2xts::tbl_xts(cols_to_xts = Returns, spread_by = Tickers) %>% 
+    PerformanceAnalytics::Return.calculate(., method = "log") %>% 
+    tbl2xts::xts_tbl()
+
+# Now you can compare d1 and d2 - they're exactly the same
+```
+
+To get the monthly returns from the weekly, we can simple trim the dates to be the last date of the month: (note our earlier equations, tread carefully here…)
+
+First, let’s use the very nice feature of the as.Date(). Let’s define the years and months as columns, and then using group_by to calculate the monthly returns for each:
+```{r}
+Year_Month <- function(x) format(as.Date(x), "%Y_%B")
+# The following creates a Year and Month column:
+cumdata <- 
+data %>% 
+mutate(YM = Year_Month(Date))
+
+# Now we can use group_by() to calculate the monthly dlog
+# returns for each numeric logret column: (Notice the use of
+# mutate_if...)
+cumdata_Logret_Monthly <- 
+cumdata %>% 
+arrange(Date) %>% 
+filter(Date >= lubridate::ymd(20000128)) %>% 
+group_by(YM) %>% filter(Date == last(Date)) %>% 
+ungroup() %>% 
+mutate(across(.cols = where(is.numeric), .fns = ~log(.) - lag(log(.)))) %>% 
+    
+filter(Date > first(Date)) %>% mutate(Year = format(Date, "%Y")) %>% 
+    
+group_by(Year) %>% 
+# Now we can sum to get to annual returns:
+summarise(across(.cols = where(is.numeric), .fns = ~sum(.)))
+```
+
+Notice that if we had simple returns, it is not as simple as just summing… We would need to chain geometrically (using cumprod) our weekly returns and then calculate the monthly returns this way:
+Of course, assuming we wanted to go weekly to monthly for illustration purposes, you could’ve just taken the TRI returns for last day of month…
+
+#Tidy format
+```{r}
+Year_Month <- function(x) format(as.Date(x), "%Y_%B")
+Cols_to_Gather <- data %>% select_if(is.numeric) %>% names() #this just gets the name of the cols and thats it as you can see below we use this object in "all_of"
+
+# First get weekly, then use that to get monthly (for
+# illustration):
+data %>% 
+arrange(Date) %>% 
+mutate(YM = Year_Month(Date)) %>% 
+gather(Country, TRI, all_of(Cols_to_Gather)) %>% 
+group_by(Country) %>% 
+mutate(WeeklyReturn = TRI/lag(TRI) - 1) %>% 
+filter(Date >= lubridate::ymd(20000128)) %>% 
+mutate(WeeklyReturn = coalesce(WeeklyReturn, 0)) %>% #the 0 is a replacement of na so returns are started at 0
+mutate(MonthlyIndex = cumprod(1 + WeeklyReturn)) %>% 
+group_by(YM) %>% 
+filter(Date == last(Date)) %>% 
+group_by(Country) %>% 
+mutate(MonthlyReturn = MonthlyIndex/lag(MonthlyIndex) - 1)
+```
+
+Notice how returns have to be geometrically chained when summing accross time-dimensions. For the simple returns, however, we can sum within time-dimensions of course.
+
+Below I assume an equally weight portfolio, rebalanced every week back to equal weighted.
+
+```{r}
+Cols_to_Gather <- data %>% select_if(is.numeric) %>% names
+
+data %>% 
+arrange(Date) %>% 
+mutate(YM = Year_Month(Date)) %>% 
+gather(Country, TRI, Cols_to_Gather) %>% 
+mutate(Weight = 1/length(Cols_to_Gather)) %>% 
+# By country to get return:
+group_by(Country) %>% 
+mutate(Ret = TRI/lag(TRI) - 1) %>% 
+# By date to calculate EW portfolio:
+group_by(Date) %>% 
+summarise(EW_Port = sum(Ret * Weight, na.rm = T))
+```
+
+#xts package nb!!!
+
+Using tbl2xts you can now move very easily between data.frames and the xts environment, and use it very easily in packages like PerformanceAnalytics.
+
+E.g., let’s use our previous random dataframe, and do some nice things with it:
+
+While the above is the by hand way of calculating such returns - we could also use subsetting using the powerful xts package. See the following useful commands (and keep these subsetting tools in mind with your write-ups):
+
+```{r}
+# ======== useful xts subsetting commands: First do the xts
+# transformation:
+xts.data <- tbl_xts(data)
+
+# Subsetting the xts.data
+xts.data["2013"]  # Dates in 2013
+
+xts.data["2013/"]  # Dates since start of 2013
+
+xts.data["2015-1/2015-2"]  # Dates from start of Jan through to end of Feb 2015
+
+xts.data["/2008-9"]  # Dates prior to 2008 October (before Crisis period)
+
+first(xts.data, "1 month")  # The first one month of xts.data
+
+# Of course, you can easily truncate and move back to a
+# tbl_df() by using: xts_tbl
+truncated_df <- xts_tbl(xts.data["2013/"])
+```
+
+To see the potential of xts in subsetting daily returns, let’s create use a daily return series and subset it:
+
+```{r}
+dailydata <- fmxdat::DailyTRIs
+# Let's focus our analysis only on three companies: SLM SJ,
+# SOL SJ and TKG SJ
+xts.data <- 
+dailydata %>% 
+select(Date, "SLM SJ", "SOL SJ") %>% 
+tbl_xts()
+
+# If you want to remove the SJ from the column names, use:
+colnames(dailydata) <- 
+gsub(" SJ", "", colnames(dailydata))
+
+# Now we can pipe:
+xts.data <- dailydata %>% 
+select(Date, SLM, SOL) %>% tbl_xts()
+
+### What can xts do?
+
+# Use the generic .index* functions to extract certain months
+# or days of month See : ?.index for more...
+xts.data[.indexwday(xts.data) == 5]  # Friday's only
+
+xts.data[.indexwday(xts.data) == 1]  # Mondays only
+
+xts.data[.indexmon(xts.data) == 0]  # Date's in Jan in all years
+
+xts.data[.indexmday(xts.data) == 1]  # First day of every month
+
+# Using the endpoints
+xts.data[endpoints(xts.data, "months", k = 3)]  # Last day of every quarter (hence k = 3)
+
+# Plotting with default lables is simple
+plot(xts.data[, "SLM"], major.ticks = "years", minor.ticks = FALSE, 
+    main = "Sanlam", col = 3, ylab = "SLM SJ TRI")
+
+# Let's suppose SLM had some dates with no values. Let's
+# create some random missing Values:
+xts.data[150, "SLM"] <- NA
+
+xts.data[1990, "SLM"] <- NA
+
+# If we now wanted to see whether there are any missing
+# values and identify the dates:
+index(xts.data)[is.na(xts.data)[, "SLM"]]
+
+# Let's proceed to 'pad' these NA values with the previous
+# day's TRI values.  We do so using the last observation
+# carried forward (na.locf) command - which thus looks for
+# NA's, and replaces it with the previous valid return
+# series. It goes back max 5 days in our example:
+xts.data.padded <- na.locf(xts.data, na.rm = F, maxgap = 5)
+
+# See what happened, compare non-padded and padded:
+xts.data.padded["2003-08-05/2003-08-10"]$SLM
+
+xts.data["2003-08-05/2003-08-10"]$SLM
+
+# To get the last date of each month / Week to create monthly
+# returns:
+xts.data.padded.monthly <- xts.data.padded[endpoints(xts.data.padded, 
+    "months")]
+
+xts.data.padded.weekly <- xts.data.padded[endpoints(xts.data.padded, 
+    "weeks")]
+
+# Create a monthly return series for each column:
+xts.data.padded.monthly.returns <- diff.xts(xts.data.padded.monthly, 
+    lag = 1, log = F, arithmetic = F) - 1
+# Notice that diff.xts() offers new params (lag, log,
+# arithmetic arguments..)
+
+# You can also quickly view periodicity as:
+periodicity(xts.data.padded.monthly.returns)
+```
+
+period.apply
+xts has a very powerful utility called period.apply.
+
+See e.g. below how we can do quite advanced calcs pretty simply using tbl_xts, xts and PerformanceAnalytics.
+
+We first calculate daily log returns
+
+we then calculate monthly annualised SD numbers.
+
+```{r}
+library(tbl2xts)
+
+library(PerformanceAnalytics)
+
+#step by step 1 tidy 2 and then use tbl_xts and cols_to_xts the cols name, spread by what we gathered by 3 use the performance anaylytics package to calculate returnd (it requires xts format) 4  after returns have been calculated then we can go back tibble using xts_tbl but it will again be wide so we want to gather to get it tidy again
+
+dailydata <- fmxdat::DailyTRIs
+
+dailydata <- 
+dailydata %>% 
+gather(Stocks, Px, -Date) %>% 
+mutate(Stocks = gsub(" SJ", "", Stocks))
+
+Monthly_Annualised_SD <- 
+dailydata %>% 
+# Make xts:
+tbl_xts(., cols_to_xts = Px, spread_by = Stocks) %>% 
+PerformanceAnalytics::CalculateReturns(., method = "log") %>% 
+    
+na.locf(., na.rm = F, maxgap = 5) %>% #Generic function for replacing each NA with the most recent non-NA prior to it
+xts::apply.monthly(., FUN = PerformanceAnalytics::sd.annualized) %>% 
+    
+# Make tibble again:
+xts_tbl() %>% 
+gather(Stock, SD, -date) %>% mutate(date = as.Date(date))
+```
+
+Please see all the examples \url{https://tbl2xts.nfkatzke.com/}.
+
+E.g., piping straight into a ggplot also follows trivially:
+```{r}
+tbl2xts::TRI %>% 
+tbl_xts(., cols_to_xts = TRI, spread_by = Country) %>% 
+PerformanceAnalytics::Return.calculate(.) %>% 
+xts::apply.yearly(., FUN = PerformanceAnalytics::CVaR) %>% 
+xts_tbl %>% 
+tidyr::gather(Country, CVaR, -date) %>% 
+# Now plot it:
+ggplot() + 
+geom_line(aes(date, CVaR), color = "steelblue", size = 1.1, alpha = 0.8) + 
+    
+fmxdat::theme_fmx() + 
+facet_wrap(~Country) + 
+labs(x = "", title = "CVaR Plot example", subtitle = "Using tbl2xts package")
+```
+
+
+#Combining dplyr and tbl2xts
+While the above is nice, and there are really awesome wrangling techniques to use in xts - I would prefer you combine dplyr and xts to do the above.
+
+See below for an example using the dplyr - xts - PerformanceAnalytics combination to do, e.g., portfolio return calculations.
+
+Let’s use our dailydata series to do some quick calcs:
+
+calculate Returns (simple) for all stocks
+
+Calculate the cumulative returns for our stocks (if you invested R1 in a stock, what would you have now?)
+
+
+Notice below - we will be using rmsfuns::Safe_Return.portfolio for portfolio return calculation.
+
+To see the motivation for this, please work through the following public gist:
+
+https://gist.github.com/Nicktz/dddbe80ac427b7a96a58c39ef6e6f0d8
+
+```{r}
+# First: calculate ordinary returns
+library(lubridate)
+
+#------------------ 
+# Step one: gather to make tidy:
+dailydata <- fmxdat::DailyTRIs
+
+colnames(dailydata) <- gsub(" SJ", "", colnames(dailydata))
+
+Data_Adj <- 
+dailydata %>% 
+gather(Stocks, Price, -Date) %>% 
+# Then arrange by date (as we'll be using lags)...
+arrange(Date) %>% 
+# Now calculate ordinary returns per stock:
+group_by(Stocks) %>% 
+mutate(Returns = Price/lag(Price) - 1) %>% ungroup()
+
+#------------------ 
+# Second: Calculate Cumulative Returns
+CumRets <- 
+Data_Adj %>% 
+# for cumulative returns - we have to change NA to zero, else
+# an NA would break the chain....
+mutate(Returns = coalesce(Returns, 0)) %>% 
+# Any NA in Returns is changed to zero
+group_by(Stocks) %>% 
+mutate(Cum_Ret = cumprod(1 + Returns))
+
+# Bonus: Figure for Naspers:
+ggplot(CumRets %>% filter(Stocks == "NPN")) + 
+geom_line(aes(Date, Cum_Ret), color = "steelblue") + 
+theme_bw() + labs(title = "Naspers cumulative Return", y = "Growth of R1 invested in 2003.")
+
+
+
+
+
+#------------------ 
+# Third: Calculate Equal weighted portfolio return First date
+# wrangle...
+Trimmed_Ret_Data <- 
+Data_Adj %>% 
+filter(Date >= lubridate::ymd(20030412) & Date < lubridate::ymd(20040101))
+
+# Now, we will be using PerformanceAnalytics'
+# Return.portfolio() which, if you type: ?Return.portfolio, #
+# shows that it wants the weight vector as xts (with stock
+# names and weights), as well as the returns in xts.  ...With
+# tbl2xts, this is trivial.
+
+# First the weights:
+W_xts <- 
+Trimmed_Ret_Data %>% 
+# Check this cool trick:
+filter(Date == first(Date)) %>% 
+mutate(weight = 1/n()) %>% 
+tbl_xts(., cols_to_xts = weight, spread_by = Stocks)
+
+# Now Returns:
+R_xts <- 
+Trimmed_Ret_Data %>% 
+tbl_xts(., cols_to_xts = Returns, spread_by = Stocks)
+
+# Now... first ensure that column names between R_xts and
+# W_xts match:
+R_xts <- R_xts[, names(W_xts)]
+
+# Set all NA returns to zero:
+R_xts[is.na(R_xts)] <- 0
+# Set all NA weights to zero:
+W_xts[is.na(W_xts)] <- 0
+
+# Also set NA's to zero:
+Portfolio <- rmsfuns::Safe_Return.portfolio(R = R_xts, weights = W_xts, 
+    geometric = TRUE)
+
+Portf_Rets <- Portfolio$portfolio.returns %>% xts_tbl()  # because who has time for xts now...
+
+# And that's a wrap. Simple!
+```
+
+
+#Performance analytics package
+Below I show you how to calculate some of the metrics defined in Performance Analytics.
+
+For a technical discussion into the definitions and uses of the return metrics calculated in PerformanceAnalytics package, see Bacon (2011).
+
+Plotting functionalities
+PA offers several useful plots for returns time-series. E.g. using our xts.data.dailyreturns series before, let’s look at the distributional properties of Sanlam:
+
+```{r}
+pacman::p_load(tbl2xts, PerformanceAnalytics)
+
+dailydata <- fmxdat::DailyTRIs
+
+colnames(dailydata) <- gsub(" SJ", "", colnames(dailydata) )
+
+xts.data.dailyreturns <- 
+  
+  dailydata %>% 
+  
+  gather(Stock, TRI, -Date) %>% 
+  
+  group_by(Stock) %>% 
+  
+  mutate(Return = TRI / lag(TRI)-1) %>%  
+  
+  ungroup() %>% 
+  
+  tbl_xts(tblData = ., cols_to_xts = Return, spread_by = Stock)
+
+chart.Histogram(xts.data.dailyreturns$SLM, methods = "add.normal", 
+                main = "Sanlam Histogram")
+
+
+
+
+# Add normal line and VaR estimates
+chart.Histogram(xts.data.dailyreturns$SLM, 
+  methods = c("add.density", "add.normal", "add.risk"),
+  main = "Adding Value at Risk (95%)")
+
+
+
+
+chart.Boxplot(xts.data.dailyreturns$SLM, main = "Sanlam Boxplot")
+
+
+chart.QQPlot(xts.data.dailyreturns$SLM, distribution = "norm", 
+             main = "QQ-Plot of Sanlam")
+
+
+chart.Drawdown(xts.data.dailyreturns$SLM,main = "Drawdowns: Sanlam", 
+               col = "steelblue")
+
+
+chart.CumReturns(xts.data.dailyreturns$SLM,main = "Drawdowns: Sanlam", 
+               col = "steelblue")
+
+
+chart.Scatter(x = xts.data.dailyreturns$SLM, 
+              y = xts.data.dailyreturns$SOL, 
+              main = "Scatter: Sanlam & Sasol", col = "steelblue", 
+              xlab = "Sanlam", ylab = "Sasol")
+
+
+## Or check out this risk-return scatter for several stocks since 2010...
+chart.RiskReturnScatter(R=xts.data.dailyreturns['2003-01-01/'][,c("AGL", "AMS", "ANG", "AOD")])
+
+
+chart.RollingPerformance(R=xts.data.dailyreturns['2003-01-01/'][,c("AGL", "AMS", "ANG", "AOD")],
+                         
+                         FUN="sd",
+                         
+                         width=120, 
+                         
+                         main="Rolling 120 day Standard Deviation", 
+                         
+                         legend.loc="bottomleft")
+
+
+
+```
+
+#DIY
+Attempt to replicate all these graphs in ggplot.
+
+Financial Ratios
+PA also helps with the calculation of some crucial financial ratios and metrics. You can browse through these from the vignette, here follows a couple of highlights:
+
+```{r}
+table.Stats(xts.data.dailyreturns["2003-01-01/"][, c("AGL", "AMS", 
+    "ANG", "AOD")])
+
+
+table.TrailingPeriods(R = xts.data.dailyreturns["2003-01-01/"][, 
+    c("AGL", "AMS", "ANG", "AOD")], periods = c(3, 6, 12, 36, 
+    60))
+
+
+table.DownsideRisk(xts.data.dailyreturns["2003-01-01/"][, c("AGL", 
+    "AMS", "ANG", "AOD")])
+
+
+
+```
+
+Using PerformanceAnalytics’ own data, see the following summary metrics of fund performance relative to benchmarks:
+
+```{r}
+data(managers)
+
+Rf <- managers$"US 3m TR"  # Risk-free rate
+
+Rb <- managers$"SP500 TR"  # Benchmark
+
+# CAPM Beta:
+CAPM.beta(Ra = managers$HAM1, Rb = Rb, Rf = Rf)
+
+
+# As it is monthly data, alpha would then be calculated as:
+(1 + CAPM.alpha(Ra = managers$HAM1, Rb = Rb, Rf = Rf))^12 - 1
+
+
+# Rolling 24 month Beta:
+chart.RollingRegression(Ra = managers$HAM1, Rb = Rb, width = 24, 
+    attribute = c("Beta"))
+
+
+
+# Summary:
+table.SFM(Ra = managers$HAM1, Rb = Rb)
+
+
+
+```
+
+
+#Your turn….
+Load the J200 index prices since 2017 using the code below.
+
+Compare the Financials and Industrials returns for 2017.
+
+Find the 5 most volatile stocks for the index.
+
+TIP: use: mutate(SD = sd(Returns, na.rm = TRUE)) %>% top_n(5, SD)
+Use PerformanceAnalytics and compare the maximum drawdowns of the Industrials versus the Consumer Goods sectors.
+
+Calculate all the Betas for the J200 stocks for 2018 (I’ll help you with this one below…).
+
+```{r}
+J200 <- fmxdat::J200
+
+# Rolling Betas:
+df_J200 <- 
+  
+  J200 %>% 
+  
+  group_by(Tickers) %>% 
+  
+  mutate(Ret = Prices / lag(Prices) - 1) %>% 
+  
+  group_by(date) %>%
+  
+  mutate(J200 = sum(Ret * weight_Adj, na.rm=T)) %>% 
+  
+  ungroup()
+
+TickChoice <- paste0( c("BIL", "SBK", "SOL"), " SJ Equity")
+
+PerformanceAnalytics::chart.RollingRegression(Ra = df_J200 %>% filter(Tickers %in% TickChoice) %>%  
+                                                
+                                                mutate(Ret = coalesce(Ret, 0) ) %>% 
+                                                tbl_xts(., cols_to_xts = Ret, spread_by = Tickers),
+                                              Rb = df_J200 %>% group_by(date) %>% summarise(J200 = max(J200)) %>%
+                                                tbl_xts(., cols_to_xts = J200),width=120,attribute = c("Beta"), legend.loc = "top")
+
+# Static Betas:
+
+CAPM.beta(Ra=df_J200 %>% filter(Tickers %in% TickChoice) %>%  
+            mutate(Ret = coalesce(Ret, 0) ) %>%
+            tbl_xts(., cols_to_xts = "Ret", spread_by = "Tickers"),
+          Rb=df_J200 %>% group_by(date) %>% summarise(J200 = max(J200)) %>% tbl_xts(., cols_to_xts = "J200"))
+```
+
+
+#Annualizing Returns
+Something that can easily confuse young analysts is when and how to annualize returns.
+
+The idea behind annualizing returns is to be able to make direct comparisons of returns across different time periods.
+
+Let’s take the following example - you have been tasked to create a barplot of the annualized returns of the different ALSI sector indices using their monthly returns, on a 6 month, 12 month, 3 year, 5 year and 10 year basis, annualized. Do so for the following sectors: FINI, INDI, RESI, ALSI, MIDCAPS, and ALSI TOP40.
+
+The following code chunk will achieve this manually. I will also show you an easy way to verify your numbers using PerformanceAnalytics afterwards.
+```{r}
+options(dplyr.summarise.inform = F)
+library(lubridate)
+
+# make returns monthly for illustration:
+idx <- fmxdat::SA_Indexes %>% 
+filter(Tickers %in% c("FINI15TR Index", "INDI25TR Index", "JALSHTR Index", 
+    "MIDCAPTR Index", "RESI20TR Index", "TOP40TR Index")) %>% 
+    
+mutate(YM = format(date, "%Y%B")) %>% 
+arrange(date) %>% 
+group_by(Tickers, YM) %>% filter(date == last(date)) %>% 
+group_by(Tickers) %>% 
+mutate(ret = Price/lag(Price) - 1) %>% select(date, Tickers, 
+    ret) %>% ungroup()
+```
+
+Now - be careful with the trick below to calculate past returns using monthly data.
+
+You will be tempted to calculate 6 month returns using:
+
+```{r}
+idx %>% filter(date > last(date) %m-% months(6)) %>% summarise(mu = prod(1 + 
+    ret, na.rm = T)^(12/(6)) - 1)
+```
+
+While this is correct for the above, notice that the lagging of six months needs to be carefully done depending on when the month ended. If it ended Feb 28, then last(date) %m-% months(6) would give you 7 months. Check:
+
+```{r}
+idx %>% filter(date > last(date) %m-% months(6)) %>% pull(date) %>% 
+    unique
+
+
+idx %>% filter(date <= ymd(20200228)) %>% filter(date > last(date) %m-% 
+    months(6)) %>% pull(date) %>% unique
+
+
+
+```
+
+Argue for yourself why this is the case using this format.
+
+You should use, in such instances, instead use the following function for safer lagging of months this way (to get what we want to achieve):
+
+```{r}
+idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 6)) %>% 
+    pull(date) %>% unique
+
+idx %>% filter(date <= ymd(20200228)) %>% filter(date >= fmxdat::safe_month_min(last(date), 
+    N = 6)) %>% pull(date) %>% unique
+
+# And the equivalent fmxdat::safe_year_min for years
+
+
+
+# Now, see my trick below to order and rename facet_wraps for plotting using Freq = A, B, ... (you'll see in the plot function why this is done)
+
+#======================
+# Manual Calculation:
+#======================
+
+dfplot <- 
+  
+    bind_rows(
+      
+      # Don't annualize for less than a year, e.g.:
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 6)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(6)) -1 ) %>% mutate(Freq = "A"),
+      
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 12))  %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(12)) -1 ) %>% mutate(Freq = "B"),
+      
+            idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 36)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(36)) -1 ) %>% mutate(Freq = "C"),
+      
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 60)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(60)) -1 ) %>% mutate(Freq = "D")
+      
+    )
+
+#======================
+# PerformanceAnalytics
+#======================
+library(tbl2xts);library(PerformanceAnalytics);library(fmxdat)
+idxxts <- 
+  tbl_xts(idx, cols_to_xts = ret, spread_by = Tickers)
+dfplotxts <- 
+  
+    bind_rows(
+      # Don't annualize for less than a year, e.g.:
+      idxxts %>% tail(6) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "A"),
+      
+      idxxts %>% tail(12) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "B"),
+      
+      idxxts %>% tail(36) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "C"),
+      
+      idxxts %>% tail(60) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "D"),
+      
+    ) %>% data.frame() %>% gather(Tickers, mu, -Freq) %>% 
+  mutate(Tickers = gsub("\\.", " ", Tickers))
+
+
+
+# Barplot_foo:
+to_string <- as_labeller(c(`A` = "6 Months", `B` = "1 Year", `C` = "3 Years", `D` = "5 Years"))
+
+  g <- 
+    
+  dfplot %>%
+  
+  # Compare to (they are the exact same):
+  # dfplotxts %>%
+    
+  ggplot() + 
+    
+  geom_bar( aes(Tickers, mu, fill = Tickers), stat="identity") + 
+    
+  facet_wrap(~Freq, labeller = to_string, nrow = 1) + 
+    
+  labs(x = "", y = "Returns (Ann.)" , caption = "Note:\nReturns in excess of a year are in annualized terms.") + 
+    
+  fmx_fills() + 
+    
+  geom_label(aes(Tickers, mu, label = paste0( round(mu, 4)*100, "%" )), size = ggpts(8), alpha = 0.35, fontface = "bold", nudge_y = 0.002) + 
+    
+  theme_fmx(CustomCaption = T, title.size = ggpts(43), subtitle.size = ggpts(38), 
+                caption.size = ggpts(30), 
+            
+                axis.size = ggpts(37), 
+            
+                legend.size = ggpts(35),legend.pos = "top") +
+
+  theme(axis.text.x = element_blank(), axis.title.y = element_text(vjust=2)) + 
+    
+  theme(strip.text.x = element_text(face = "bold", size = ggpts(35), margin = margin(.1, 0, .1, 0, "cm"))) 
+  
+g
+```
+
+
+#Calculating Rolling Returns
+Another very important calculation for evaluating and comparing the performance of different indices is to calculate rolling returns.
+
+This follows as cumulative returns, while insightful in itself, can be a misleading figure as early outperformance can greatly skew later performance. Also, if funds / indices have different start dates, the figure itself will also be distorted.
+
+See example below where we first compare the cumulative returns of several selected Indices (using idx as defined above), noting the distortion effects it creates, even after considering log cumulative returns (which controls for the level effects):
+
+```{r}
+gg <- idx %>% 
+arrange(date) %>% group_by(Tickers) %>% 
+# Set NA Rets to zero to make cumprod work:
+mutate(Rets = coalesce(ret, 0)) %>% 
+mutate(CP = cumprod(1 + Rets)) %>% 
+ungroup() %>% 
+ggplot() + 
+geom_line(aes(date, CP, color = Tickers)) + 
+labs(title = "Illustration of Cumulative Returns of various Indices with differing start dates", 
+    subtitle = "", caption = "Note:\nDistortions emerge as starting dates differ.") + 
+    theme_fmx(title.size = ggpts(30), subtitle.size = ggpts(5), 
+        caption.size = ggpts(25), CustomCaption = T)
+
+# Level plot
+gg
+
+
+gg + coord_trans(y = "log10") + labs(title = paste0(gg$labels$title, 
+    "\nLog Scaled"), y = "Log Scaled Cumulative Returns")
+
+
+
+```
+
+Notice that the above cannot be sensibly interpreted - and also doesn’t show the extent of outperformance recently of the RESI20.
+
+For this reason, we often look at rolling returns, in order to give a better indication of the actual performance comparison of different funds.
+
+Let’s compare the returns above now on a rolling 3 year annualized basis:
+
+```{r}
+plotdf <- 
+idx %>% group_by(Tickers) %>% 
+# Epic sorcery:
+mutate(RollRets = RcppRoll::roll_prod(1 + ret, 36, fill = NA, 
+    align = "right")^(12/36) - 1) %>% 
+# Note this cool trick: it removes dates that have no
+# RollRets at all.
+
+group_by(date) %>% filter(any(!is.na(RollRets))) %>% 
+ungroup()
+
+g <- 
+plotdf %>% 
+ggplot() + 
+geom_line(aes(date, RollRets, color = Tickers), alpha = 0.7, 
+    size = 1.25) + 
+labs(title = "Illustration of Rolling 3 Year Annualized Returns of various Indices with differing start dates", 
+    subtitle = "", x = "", y = "Rolling 3 year Returns (Ann.)", 
+    caption = "Note:\nDistortions are not evident now.") + theme_fmx(title.size = ggpts(30), 
+    subtitle.size = ggpts(5), caption.size = ggpts(25), CustomCaption = T) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
+```
+
+Now - be careful with the trick below to calculate past returns using monthly data.
+
+You will be tempted to calculate 6 month returns using:
+
+```{r}
+idx %>% filter(date > last(date) %m-% months(6)) %>% summarise(mu = prod(1 + 
+    ret, na.rm = T)^(12/(6)) - 1)
+```
+While this is correct for the above, notice that the lagging of six months needs to be carefully done depending on when the month ended. If it ended Feb 28, then last(date) %m-% months(6) would give you 7 months. Check:
+
+```{r}
+idx %>% filter(date > last(date) %m-% months(6)) %>% pull(date) %>% 
+    unique
+
+
+idx %>% filter(date <= ymd(20200228)) %>% filter(date > last(date) %m-% 
+    months(6)) %>% pull(date) %>% unique
+```
+Argue for yourself why this is the case using this format.
+
+You should use, in such instances, instead use the following function for safer lagging of months this way (to get what we want to achieve):
+```{r}
+idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 6)) %>% 
+    pull(date) %>% unique
+
+
+idx %>% filter(date <= ymd(20200228)) %>% filter(date >= fmxdat::safe_month_min(last(date), 
+    N = 6)) %>% pull(date) %>% unique
+
+# And the equivalent fmxdat::safe_year_min for years
+
+```
+My answer here surfaced recently with someone again adding this is the most sensible solution. The above function is tailored from this logic (for the reverse).
+\url{https://stackoverflow.com/questions/22761199/subtracting-months-issue-with-last-day-of-month/33935621#33935621}
+
+
+```{r}
+# Now, see my trick below to order and rename facet_wraps for plotting using Freq = A, B, ... (you'll see in the plot function why this is done)
+
+#======================
+# Manual Calculation:
+#======================
+
+dfplot <- 
+  
+    bind_rows(
+      
+      # Don't annualize for less than a year, e.g.:
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 6)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(6)) -1 ) %>% mutate(Freq = "A"),
+      
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 12))  %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(12)) -1 ) %>% mutate(Freq = "B"),
+      
+            idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 36)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(36)) -1 ) %>% mutate(Freq = "C"),
+      
+      idx %>% filter(date >= fmxdat::safe_month_min(last(date), N = 60)) %>% group_by(Tickers) %>% 
+        summarise(mu = prod(1+ret, na.rm=T) ^ (12/(60)) -1 ) %>% mutate(Freq = "D")
+      
+    )
+
+#======================
+# PerformanceAnalytics
+#======================
+library(tbl2xts);library(PerformanceAnalytics);library(fmxdat)
+idxxts <- 
+  tbl_xts(idx, cols_to_xts = ret, spread_by = Tickers)
+dfplotxts <- 
+  
+    bind_rows(
+      # Don't annualize for less than a year, e.g.:
+      idxxts %>% tail(6) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "A"),
+      
+      idxxts %>% tail(12) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "B"),
+      
+      idxxts %>% tail(36) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "C"),
+      
+      idxxts %>% tail(60) %>% PerformanceAnalytics::Return.annualized(., scale = 12) %>% data.frame() %>% mutate(Freq = "D"),
+      
+    ) %>% data.frame() %>% gather(Tickers, mu, -Freq) %>% 
+  mutate(Tickers = gsub("\\.", " ", Tickers))
+
+
+
+# Barplot_foo:
+to_string <- as_labeller(c(`A` = "6 Months", `B` = "1 Year", `C` = "3 Years", `D` = "5 Years"))
+
+  g <- 
+    
+  dfplot %>%
+  
+  # Compare to (they are the exact same):
+  # dfplotxts %>%
+    
+  ggplot() + 
+    
+  geom_bar( aes(Tickers, mu, fill = Tickers), stat="identity") + 
+    
+  facet_wrap(~Freq, labeller = to_string, nrow = 1) + 
+    
+  labs(x = "", y = "Returns (Ann.)" , caption = "Note:\nReturns in excess of a year are in annualized terms.") + 
+    
+  fmx_fills() + 
+    
+  geom_label(aes(Tickers, mu, label = paste0( round(mu, 4)*100, "%" )), size = ggpts(8), alpha = 0.35, fontface = "bold", nudge_y = 0.002) + 
+    
+  theme_fmx(CustomCaption = T, title.size = ggpts(43), subtitle.size = ggpts(38), 
+                caption.size = ggpts(30), 
+            
+                axis.size = ggpts(37), 
+            
+                legend.size = ggpts(35),legend.pos = "top") +
+
+  theme(axis.text.x = element_blank(), axis.title.y = element_text(vjust=2)) + 
+    
+  theme(strip.text.x = element_text(face = "bold", size = ggpts(35), margin = margin(.1, 0, .1, 0, "cm"))) 
+  
+g
+```
+
+#Calculating Rolling Returns
+Another very important calculation for evaluating and comparing the performance of different indices is to calculate rolling returns.
+
+This follows as cumulative returns, while insightful in itself, can be a misleading figure as early outperformance can greatly skew later performance. Also, if funds / indices have different start dates, the figure itself will also be distorted.
+
+See example below where we first compare the cumulative returns of several selected Indices (using idx as defined above), noting the distortion effects it creates, even after considering log cumulative returns (which controls for the level effects):
+
+```{r}
+gg <- idx %>% 
+arrange(date) %>% group_by(Tickers) %>% 
+# Set NA Rets to zero to make cumprod work:
+mutate(Rets = coalesce(ret, 0)) %>% 
+mutate(CP = cumprod(1 + Rets)) %>% 
+ungroup() %>% 
+ggplot() + 
+geom_line(aes(date, CP, color = Tickers)) + 
+labs(title = "Illustration of Cumulative Returns of various Indices with differing start dates", 
+    subtitle = "", caption = "Note:\nDistortions emerge as starting dates differ.") + 
+    theme_fmx(title.size = ggpts(30), subtitle.size = ggpts(5), 
+        caption.size = ggpts(25), CustomCaption = T)
+
+# Level plot
+gg
+
+
+# Log cumulative plot:
+gg + coord_trans(y = "log10") + labs(title = paste0(gg$labels$title, 
+    "\nLog Scaled"), y = "Log Scaled Cumulative Returns")
+
+
+
+```
+
+
+Notice that the above cannot be sensibly interpreted - and also doesn’t show the extent of outperformance recently of the RESI20.
+
+For this reason, we often look at rolling returns, in order to give a better indication of the actual performance comparison of different funds.
+
+Let’s compare the returns above now on a rolling 3 year annualized basis:
+
+```{r}
+plotdf <- 
+idx %>% group_by(Tickers) %>% 
+# Epic sorcery:
+mutate(RollRets = RcppRoll::roll_prod(1 + ret, 36, fill = NA, 
+    align = "right")^(12/36) - 1) %>% 
+# Note this cool trick: it removes dates that have no
+# RollRets at all.
+
+group_by(date) %>% filter(any(!is.na(RollRets))) %>% 
+ungroup()
+
+g <- 
+plotdf %>% 
+ggplot() + 
+geom_line(aes(date, RollRets, color = Tickers), alpha = 0.7, 
+    size = 1.25) + 
+labs(title = "Illustration of Rolling 3 Year Annualized Returns of various Indices with differing start dates", 
+    subtitle = "", x = "", y = "Rolling 3 year Returns (Ann.)", 
+    caption = "Note:\nDistortions are not evident now.") + theme_fmx(title.size = ggpts(30), 
+    subtitle.size = ggpts(5), caption.size = ggpts(25), CustomCaption = T) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
+
+
+```
+
+#Annualized Standard Deviation
+Standard deviation is mostly used as a means of estimating risk.
+
+Similar to returns, this should be annualized when comparing different time-periods.
+
+There is, however, a slight nuance to this calculation. You will often see code where analysts annualize monthly SD numbers using:
+
+SD * sqrt(12)
+
+Please note that this is only approximately correct when using simple returns (as we require chaining to go from monthly to annual), while the correct annualized SD would require the SD of logarithmic returns. This follows because annual logarithmic return is the sum of its monthly constituents, which means multiplying by the square root of 12 works.
+
+So, to our example above - let’s calculate the rolling annualized SD of our series:
+
+```{r}
+plot_dlog <- fmxdat::SA_Indexes %>% 
+filter(Tickers %in% c("FINI15TR Index", "INDI25TR Index", "JALSHTR Index", 
+    "MIDCAPTR Index", "RESI20TR Index", "TOP40TR Index")) %>% 
+    
+mutate(YM = format(date, "%Y%B")) %>% 
+arrange(date) %>% 
+group_by(Tickers, YM) %>% filter(date == last(date)) %>% 
+group_by(Tickers) %>% 
+mutate(ret = log(Price) - lag(log(Price))) %>% select(date, Tickers, 
+    ret) %>% 
+# Rolling SD annualized calc now:
+mutate(RollSD = RcppRoll::roll_sd(1 + ret, 36, fill = NA, align = "right") * 
+    sqrt(12)) %>% 
+filter(!is.na(RollSD))
+
+
+g <- 
+plot_dlog %>% 
+ggplot() + 
+geom_line(aes(date, RollSD, color = Tickers), alpha = 0.7, size = 1.25) + 
+    
+labs(title = "Illustration of Rolling 3 Year Annualized SD of various Indices with differing start dates", 
+    subtitle = "", x = "", y = "Rolling 3 year SD (Ann.)", 
+    caption = "Note:\nDistortions are not evident now.") + theme_fmx(title.size = ggpts(30), 
+    subtitle.size = ggpts(5), caption.size = ggpts(25), CustomCaption = T) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
+```
+
+Take note of these calculations - you are actually now ahead of a major cluster of analysts that will not be able to do these types of calcs as easy as you can in practice.
+
+#Extra prac 1
+```{r}
+# Practical 1
+library(tidyverse);library(lubridate)
+
+Jalshtr <-
+    # First, make the return series monthly:
+    fmxdat::Jalshtr %>%
+    mutate(YM = format(date, "%Y%B")) %>% group_by(YM) %>%
+    filter(date == last(date)) %>% arrange(date) %>%
+    ungroup() %>%
+    mutate(Returns = TRI / lag(TRI) - 1) %>% filter(date > first(date)) %>% select(-TRI, -YM)
+
+Cum_Fee_Comparison <- function(Jalshtr, Fee = 50*1e-4, Start = ymd(20100101),
+                               # Added purely for figure adjustment:
+                               Gap = 3, Lvlset = 5,
+                               mnthfwd = 18){
+
+    # Turn annual fee into monthly compounded:
+    # Remember, we want to find x so that its compound is 10 bps, or: (1+x)^12 = 10*1e-4
+    feeconverter <- function(x, Ann_Level) (1+x)^(1/Ann_Level)-1
+
+    df_p <-
+        Jalshtr %>% filter(date > Start) %>%
+        mutate('Return - 10 bps' = Returns - feeconverter(10*1e-4, Ann_Level = 12)) %>%
+        mutate('Return - 50 bps' = Returns - feeconverter(50*1e-4, Ann_Level = 12)) %>%
+        mutate('Return - 100 bps' = Returns - feeconverter(100*1e-4, Ann_Level = 12)) %>%
+        mutate('Return - 200 bps' = Returns - feeconverter(200*1e-4, Ann_Level = 12)) %>%
+        mutate('Return - 250 bps' = Returns - feeconverter(250*1e-4, Ann_Level = 12)) %>%
+        mutate('Return - 350 bps' = Returns - feeconverter(350*1e-4, Ann_Level = 12)) %>%
+        rename(Gross = Returns) %>%
+        gather(Type, Rets, -date, -Gross) %>%
+        group_by(Type) %>% filter(date > first(date)) %>%
+        mutate(CP = cumprod(1+Rets)) %>%
+        mutate(Gross = cumprod(1+Gross))
+
+    Ord <- c('Return - 10 bps', 'Return - 50 bps', 'Return - 100 bps', 'Return - 200 bps', 'Return - 250 bps', 'Return - 350 bps')
+
+    Txt <-
+        df_p %>% filter(date == last(date)) %>%
+        mutate(date = date %m+% months(Gap)) %>%
+        mutate(Text = paste0(round(CP/Gross-1, 3)*100, "%")) %>%
+        # Order:
+        mutate(Type = as.factor(Type)) %>%
+        mutate(Type = forcats::fct_relevel(Type, Ord))
+
+    Shock350 <-
+        df_p %>% filter(date == last(date)) %>%
+        mutate(date = date %m+% months(Gap)) %>%
+        filter(Type == 'Return - 350 bps') %>% pull(CP)
+    Shock250 <-
+        df_p %>% filter(date == last(date)) %>%
+        mutate(date = date %m+% months(Gap)) %>%
+        filter(Type == 'Return - 250 bps') %>% pull(CP)
+    Shock25 <-
+        df_p %>% filter(date == last(date)) %>%
+        mutate(date = date %m+% months(Gap)) %>%
+        filter(Type == 'Return - 10 bps') %>% pull(CP)
+
+    Msg <-
+        df_p %>% ungroup() %>% filter(date > first(date) %m+% months(mnthfwd)) %>% slice(1) %>%
+        mutate(Lvl = Lvlset) %>% mutate(Msg = glue::glue("R1m invested in {format(Start, '%B %Y')}\n* 10bps: R{round(Shock25, 2)}m\n* 250bps: R{round(Shock250, 2)}m\n* 350bps: R{round(Shock350, 2)}m"))
+
+    g <-
+        df_p %>%
+        mutate(Type = as.factor(Type)) %>%
+        mutate(Type = forcats::fct_relevel(Type, Ord)) %>%
+        fmxdat::plot_order_set( Column = "Type", Order = Ord) %>%
+
+        ggplot() +
+        geom_line(aes(date, Gross), color = "darkgreen", size = 1.5, alpha = 0.95) +
+        geom_line(aes(date, CP, color = Type), size = 1.2, alpha = 0.6) +
+        # ggrepel::geom_label_repel(data = Txt, aes(date, CP, label = Text ), hjust = 0, color = "darkred", alpha = 0.25, size = 3) +
+        geom_text(data = Txt, aes(date, CP, label = Text ), hjust = 0, color = "darkred", size = 3.3) +
+        fmxdat::theme_fmx() +
+        geom_label(data = Msg, aes(date, Lvl, label = Msg), color = "darkgreen", alpha = 0.8, size = 4) +
+        labs(title = "Fee Impact on Cumulated Wealth",
+             subtitle = glue::glue("Base Return: FTSE JSE All Share Index | Start Date: {format(Start, '%B %Y')}"),
+             x = "", y = "Cumulative Returns") +
+
+        scale_x_date(labels = scales::date_format("%Y"), date_breaks = "1 year") +
+        theme(axis.text.x=element_text(angle = 90, hjust = 1))
+
+
+    g
+
+}
+
+# Now lets look at the different rates from different time periods
+
+# Impact from inception (2002)
+Cum_Fee_Comparison(Jalshtr, Fee = 50*1e-4, Start = ymd(20020101),
+                   # Added purely for figure adjustment:
+                   Gap = 3, Lvlset = 7,
+                   mnthfwd = 18)
+
+# (2010)
+Cum_Fee_Comparison(Jalshtr, Fee = 50*1e-4, Start = ymd(20100101),
+                   # Added purely for figure adjustment:
+                   Gap = 3, Lvlset = 3,
+                   mnthfwd = 18)
+
 ```
 
 

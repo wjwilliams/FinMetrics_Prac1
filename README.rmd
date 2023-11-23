@@ -332,7 +332,7 @@ data %>%
 arrange(Date) %>% 
 gather(Tickers, Returns, -Date) %>% 
 # Remember - before a function, just add ~
-mutate(across(.cols = Returns, .fns = ~./lag(.) - 1, .names = "Simple_{col}")) %>% 
+mutate(across(.cols = Returns, .fns = ~./lag(.) - 1, .names = "Simple_{col}")) %>% #Col will be "Returns"
     
 mutate(across(.cols = Returns, .fns = ~log(.) - lag(log(.)), 
     .names = "Dlog_{col}")) %>% 
@@ -340,11 +340,11 @@ filter(Date > first(Date)) %>%  #This is the same as slicing but cant use slice 
 group_by(Tickers) %>% 
 mutate(across(.cols = c(starts_with("Simple"), starts_with("Dlog")), 
     .fns = list(Max = ~max(.), Min = ~min(.), Med = ~median(.)), 
-    .names = "{fn}_{col}")) %>% 
+    .names = "{fn}_{col}")) %>% #fn is the function so it will be max, min and median
 ungroup()
 
 
-# Need to brush up on this as i don't fully understand the seconnd last line where does the fn come from as it was never explicitly named
+# Need to brush up on this as i don't fully understand the seconnd last line where does the fn come from as it was never explicitly named, NVM i get it now
 ```
 
 #Performance analytics package
@@ -511,7 +511,7 @@ plot(xts.data[, "SLM"], major.ticks = "years", minor.ticks = FALSE,
 # create some random missing Values:
 xts.data[150, "SLM"] <- NA
 
-xts.data[1990, "SLM"] <- NA
+# xts.data[1990, "SLM"] <- NA
 
 # If we now wanted to see whether there are any missing
 # values and identify the dates:
